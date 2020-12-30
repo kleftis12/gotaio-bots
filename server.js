@@ -3,7 +3,7 @@ const request = require("request-promise");
 const proxyagent = require("proxy-agent");
 
 const gotaClientVersion = '3.2.13';
-const botsAmount = 200;
+const botsAmount = 50;
 
 let int = null;
 let proxy = null;
