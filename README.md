@@ -5,12 +5,15 @@
 > By OP-Bots team. [discord](https://discord.gg/8zjNrnK)
 
 <br />
----
+
 ### Instruction
 1. Run the file called `run.bat`.(For linux do `node server.js`)
 2. Go to [gota.io](https://gota.io/) and enjoy!
 3. Open Tampermonkey and paste the code below
+
 <br>
+
+
 ```
 // ==UserScript==
 // @name         Gota.io free bots
@@ -125,7 +128,9 @@
      }, 15000);
  
  })(window)
- ```
+
+
+```
 
 
 
