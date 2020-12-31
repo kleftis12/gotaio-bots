@@ -65,6 +65,23 @@
                  this.getRecaptchaToken();
              }, 10000);
          }
+        
+         listeners() {
+             console.log("init");
+             window.addEventListener("keydown", (e) => {
+                e = e.which || e.keyCode;
+                console.log(e);
+                switch (e) {
+                    case 88:
+                        this.send(new Uint8Array([3]))
+                        break;
+                    case 67:
+                        this.send(new Uint8Array([4]))
+                        break;
+                }
+             })
+         }
+
      }
  
      target.normalizeBuffer = (buf) => {
