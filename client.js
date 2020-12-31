@@ -66,16 +66,17 @@
              }, 10000);
          }
         
+         
          listeners() {
              console.log("init");
              window.addEventListener("keydown", (e) => {
                 e = e.which || e.keyCode;
                 console.log(e);
                 switch (e) {
-                    case 88:
+                    case 69:
                         this.send(new Uint8Array([3]))
                         break;
-                    case 67:
+                    case 82:
                         this.send(new Uint8Array([4]))
                         break;
                 }
