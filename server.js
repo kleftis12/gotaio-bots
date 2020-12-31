@@ -1,24 +1,19 @@
 const WebSocket = require("ws");
 const request = require("request-promise");
 const proxyagent = require("proxy-agent");
+const fs = require("fs");
 
 const gotaClientVersion = '3.2.13';
-const botsAmount = 50;
+const botsAmount = 200;
 
 let int = null;
-let proxy = null;
 let bots = [];
+let gottokens = 0;
+
+const proxy = fs.readFileSync("./proxy.txt", "utf-8").split("\n");
 
 
-const getProxy = () => {
-    request.get("https://api.proxyscrape.com/?request=getproxies&proxytype=socks4&timeout=10000&country=all").then(proxies => {
-        proxy = proxies.split("\n");
-        console.log(`${proxy.length} successfully loaded proxy`);
-        initServer();
-    })
-};
-
-getProxy();
+let userSocket = null;
 
 const initServer = () => {
     console.log("Server started")
@@ -40,7 +35,7 @@ const initServer = () => {
                             server += String.fromCharCode(byte);
                         }
                         console.log(`starting bots ${server}`)
-                        startBots(server);
+                        startBots(server, ws);
                     } break;
                 case 1:
                     {
@@ -50,10 +45,25 @@ const initServer = () => {
                     {
                         let byte;
                         let token = "";
+                        let botID =  msg.readUInt8(offset++);
                         while ((byte = msg.readUInt8(offset++)) != 0) {
                             token += String.fromCharCode(byte);
                         }
-                        recaptchaTokens.addToken(token);
+                        gottokens++
+                        bots[botID].sendRecaptcha(token);
+                        //recaptchaTokens.addToken(token);
+                    } break;
+                case 3:
+                    {
+                        for(let i in bots) {
+                            bots[i].split();
+                        }
+                    } break;
+                case 4:
+                    {
+                        for(let i in bots) {
+                            bots[i].eject();
+                        }
                     } break;
                 case 16:
                     {
@@ -70,8 +80,9 @@ const initServer = () => {
     });
 }
 
-const startBots = (server) => {
+const startBots = (server, ws) => {
     destroyBots();
+    userSocket = ws;
     for (let i = 0; i < botsAmount; i++) {
         bots.push(new bot(i, server));
     }
@@ -80,11 +91,11 @@ const startBots = (server) => {
         let aliveBots = 0;
         for(let i in bots) if(!bots[i].inConnect && !bots[i].closed) aliveBots++;
         console.clear();
-        console.log(`Server: ${server} | Alive Bots: ${aliveBots}`);
+        console.log(`Server: ${server} | Alive Bots: ${aliveBots} | Total tokens generated: ${gottokens}`);
         b++;
         if (b > botsAmount) b = 0;
         if (bots[b] && !bots[b].inConnect && bots[b].closed) bots[b].connect();
-    }, 2500);
+    },  500);
 }
 
 const destroyBots = () => {
@@ -106,7 +117,7 @@ class bot {
         this.id = id;
         this.ws = null;
         this.server = server;
-        this.botNick = ["nelbots-xyz", "freebots", "dc-nelbots-xyz"];
+        this.botNick = ["Nelbots", "Free bots"];
         this.inConnect = false;
         this.closed = true;
         this.int = null;
@@ -114,7 +125,7 @@ class bot {
     connect() {
         this.inConnect = true;
         this.ws = new WebSocket(this.server, {
-            agent: new proxyagent(`socks4://${proxy[(~~(Math.random() * proxy.length))]}`)
+            agent: new proxyagent(`http://${proxy[(~~(Math.random() * proxy.length))]}`)
         });
         this.ws.binaryType = "nodebuffer";
         this.ws.onopen = this.open.bind(this);
@@ -125,7 +136,7 @@ class bot {
     open() {
         this.inConnect = false;
         this.closed = false;
-        
+
         let gotaVersion = `Gota.io ${gotaClientVersion}`;
         let buf = new Buffer.alloc(3 + gotaVersion.length);
         let offset = 0;
@@ -136,8 +147,12 @@ class bot {
         }
         buf.writeUInt8(0, offset++);
         this.sendPing();
-        this.sendRecaptcha();
-        this.spawn();
+
+        userSocket.send(Buffer.from([0, this.id]))
+
+        //this.sendRecaptcha();
+        //this.spawn();
+        
         this.int = setInterval(() => {
             this.sendPing();
             this.spawn();
@@ -146,11 +161,16 @@ class bot {
             this.spawn();
         }, 3000);
     }
+    split() {
+        this.send(Buffer.from([17]));
+    }
+    eject() {
+        this.send(Buffer.from([21]));
+    }
     sendPing() {
         this.send(Buffer.from([71]));
     }
-    sendRecaptcha() {
-        let token = recaptchaTokens.getToken();
+    sendRecaptcha(token) {
         if (token) {
             this.sendRecaptchaResponse(token);
         } else {
@@ -158,7 +178,8 @@ class bot {
         }
     }
     spawn() {
-        let nick = "nelbots-xyz";
+        let nick = "www-nelbots-xyz";
+        let nick = "dc-nelbots-xyz";
         let buf = new Buffer.alloc(2 + ((nick.length + 1) * 2));
         let offset = 0;
         buf.writeUInt8(0, offset++);
@@ -240,3 +261,4 @@ class tokenManager {
 }
 
 const recaptchaTokens = new tokenManager();
+initServer();   
